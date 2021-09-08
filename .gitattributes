@@ -1,0 +1,8 @@
+* text=auto
+
+*.jpg binary
+*.png binary
+
+# SQL Server files
+*.mdf
+*.ldf
