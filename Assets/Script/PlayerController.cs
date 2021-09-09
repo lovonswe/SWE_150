@@ -13,7 +13,7 @@ public class PlayerController : MonoBehaviour
     
 
     //FSM
-    private enum State {idle, running, jumping, falling}
+    private enum State {idle, running, jumping, falling, hurt}
     private State state = State.idle;
     
     //Inspector variables
@@ -22,6 +22,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpForce = 10f;
     [SerializeField] private int cherries = 0;
     [SerializeField] private Text cherryText;
+    [SerializeField] private float hurtForce = 10f;
 
     // Start is called before the first frame update
     private void Start()
@@ -35,7 +36,8 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
-        Movement();
+        if(state != State.hurt)
+            Movement();
 
         AnimationState();
         anim.SetInteger("state", (int)state);
@@ -52,6 +54,34 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void OnCollisionEnter2D(Collision2D other)
+    {
+        if (other.gameObject.tag == "Enemy")
+        {
+            if(state == State.falling)
+            {
+                Destroy(other.gameObject);
+                Jump();
+            }
+            else
+            {
+                state = State.hurt;
+                if(other.gameObject.transform.position.x > transform.position.x)
+                {
+                    //Enemy is to my right and i should be damaged and move to left;
+                    rb.velocity = new Vector2(-hurtForce, rb.velocity.y);
+               
+                }
+                else
+                {
+                    //Enemy is to left and i should be damaged and move to right
+                    rb.velocity = new Vector2(hurtForce, rb.velocity.y);
+                    
+                }
+            }
+           
+        }
+    }
     private void Movement()
     {
         float hDirection = Input.GetAxis("Horizontal");
@@ -72,9 +102,15 @@ public class PlayerController : MonoBehaviour
         //jumping
         if (Input.GetButtonDown("Jump") && coll.IsTouchingLayers(ground))
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-            state = State.jumping;
+            Jump();
         }
+    }
+
+    private void Jump()
+    {
+        rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+        state = State.jumping;
+
     }
     private void AnimationState()
     {
@@ -88,6 +124,13 @@ public class PlayerController : MonoBehaviour
         else if(state == State.falling)
         {
             if (coll.IsTouchingLayers(ground))
+            {
+                state = State.idle;
+            }
+        }
+        else if(state == State.hurt)
+        {
+            if(Mathf.Abs(rb.velocity.x) < .1f)
             {
                 state = State.idle;
             }
